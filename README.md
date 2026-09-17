@@ -1,13 +1,13 @@
 <div align="center">
 
-# 🚀 Terraform GitOps with GitHub Actions
+# 🚀 Terraform Automation with GitHub Actions
 
 [![Terraform](https://img.shields.io/badge/Terraform-v1.6+-844FBA?style=flat-square&logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white)](https://github.com/features/actions)
 [![OpenID Connect](https://img.shields.io/badge/Auth-OIDC_Federated-green?style=flat-square&logo=openid)](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 
-An enterprise-grade, automated CI/CD pipeline built with **GitHub Actions** and **Terraform** to enforce automated linting, security scanning, dry-run speculative plans on pull requests, and automated deployment on merge.
+An enterprise-grade, automated CI/CD pipeline built with **GitHub Actions** and **Terraform** to enforce automated linting, syntax validation, speculative execution plans on pull requests, and automated deployment on merge.
 
 </div>
 
@@ -88,7 +88,7 @@ The diagram below outlines the dual-stage deployment lifecycle. Pull requests tr
 * **Automated Speculative Runs:** PRs automatically generate a plan output directly injected into PR discussion threads.
 * **Secretless Authentication (OIDC):** Uses OpenID Connect Federated tokens rather than static, long-lived access keys.
 * **Concurrency Locking:** Cloud state backend integrates native locking to prevent conflicting parallel apply runs.
-* **Deterministic Versioning:** Core dependencies, provider binaries, and GitHub Actions pins are pinned to explicit SHA/semantic versions.
+* **Deterministic Versioning:** Core dependencies, provider binaries, and GitHub Actions pins are locked to explicit versions.
 
 ---
 
@@ -106,3 +106,45 @@ The diagram below outlines the dual-stage deployment lifecycle. Pull requests tr
 ├── variables.tf                    # Parameter inputs and strict validations
 ├── outputs.tf                      # Resulting state outputs
 └── versions.tf                     # Provider and Terraform version constraints
+```
+
+---
+
+## ⚙️ Secrets & Authentication Setup
+
+Store the following secrets under **Repository Settings > Secrets and variables > Actions**:
+
+| Secret Name | Purpose | Example / Required Format |
+| :--- | :--- | :--- |
+| `ARM_CLIENT_ID` / `AWS_ROLE_ARN` | Workload identity client ID or role ARN | `00000000-0000-0000-0000-000000000000` |
+| `ARM_TENANT_ID` | Identity directory tenant ID | `00000000-0000-0000-0000-000000000000` |
+| `ARM_SUBSCRIPTION_ID` | Target cloud subscription ID | `00000000-0000-0000-0000-000000000000` |
+| `BACKEND_STORAGE_ACCOUNT` | Name of remote state storage resource | `tfstatestorageaccount` |
+
+---
+
+## 🛠️ Local Development
+
+Ensure the [Terraform CLI](https://developer.hashicorp.com/terraform/install) is installed locally before contributing:
+
+```bash
+# 1. Clone repository
+git clone https://github.com/<your-org>/terraform-github-actions-demo.git
+cd terraform-github-actions-demo
+
+# 2. Format checks and syntax validation
+terraform fmt -recursive
+terraform init -backend=false
+terraform validate
+
+# 3. Dry-run execution against test variables
+terraform plan -var-file=environments/dev.tfvars
+```
+
+---
+
+## 🛡️ Best Practices & Guardrails
+
+* **Branch Protection:** Keep the `main` branch protected. Require at least one approving review and successful execution of the `terraform-plan` workflow before merges.
+* **Never Commit State:** Verify that `*.tfstate`, `*.tfstate.backup`, `.terraform/`, and local credentials are listed inside `.gitignore`.
+* **Least-Privilege RBAC:** The deployment role/service principal must only possess write access to resources specified within the scoped configurations.
